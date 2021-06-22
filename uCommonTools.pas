@@ -36,6 +36,7 @@ function icsGetFileSize(const FName: String): Int64;
 function icsFileInUse(const FName: String): Boolean;
 function icsGetIconHandleFromFileName(FName: String; Small: Boolean = True; const IconIndex: Integer = 0): HICON;
 function icsGetLongPathName(ShortName: String): String;
+function icsReplaceInvalidFileNameChars(const AFileName: String; const AReplaceWith: Char = '_'): String;
 
 function icsGetLogicalDriveString: String;
 function icsIsDriveLetterFree(const DriveLetter: Char): Boolean;
@@ -81,6 +82,7 @@ function icsSetEnvironmentVariable(const VarName, VarValue: String): Integer;
 function icsSetPrivilege(const Privilege: PChar; const EnablePrivilege: Boolean; out PreviousState: Boolean): Boolean;
 function icsStartProcess(FileName: String; Params: String = ''; CurrentDir: String = ''; ShowWindow: Integer = SW_SHOW; WaitInputIdle: Boolean = False; WaitSingleObject: Boolean = False): Boolean;
 function icsStartProcessEx(const FileName: String; const Params: String = ''; const CurrentDir: String = ''; const ShowWindow: Integer = SW_SHOW; const WaitInputIdle: Boolean = False; const WaitSingleObject: Boolean = False; const RunAsAdmin: Boolean = False): Boolean;
+function icsStartProcessExWithExitCode(const FileName, Params, CurrentDir: String; const ShowWindow: Integer; const WaitInputIdle, WaitSingleObject, RunAsAdmin: Boolean; var ExitCode: Cardinal): Boolean;
 function icsStartProcessElevated(lpApplicationName: PChar; lpCommandLine: PChar; lpCurrentDirectory: PChar; var ProcessInfo: TProcessInformation): Boolean;
 function icsStartProcessAsUser(const UserName, Domain, Password: String; FileName: String; FileParams: String = ''; CurrentDir: String = ''; WaitInputIdle: Boolean = False; WaitSingleObject: Boolean = False): Cardinal;
 function icsProcessTerminate(Id: DWORD): Boolean;
@@ -161,7 +163,7 @@ implementation
 uses
   ActiveX, ShlObj, ShellAPI, RegStr, System.NetEncoding, WinSock, TlHelp32,
   uWindows, uRegLite, uWindowsVersionInfo, uProcesses,
-  System.RegularExpressions;
+  System.RegularExpressions, System.IOUtils;
 
 const
   GENERAL_BUFFER_SIZE             = 2048;
@@ -381,6 +383,12 @@ begin
   SetLength(NameS, Len);
   GetFullPathName(PChar(ShortName), Len, PChar(NameS), pDummy);
   Result := NameS;
+end;
+
+function icsReplaceInvalidFileNameChars(const AFileName: String; const AReplaceWith: Char = '_'): String;
+begin
+  Result := AFileName;
+  for var I: Integer := Low(Result) to High(Result) do if not TPath.IsValidFileNameChar(Result[I]) then Result[I] := AReplaceWith;
 end;
 
 function icsGetLogicalDriveString: String;
